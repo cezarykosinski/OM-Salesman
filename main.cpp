@@ -1,46 +1,66 @@
-#include <QCoreApplication>
 #include <iostream>
 
 using namespace std;
 
-int dist(int** dmat, int a, int b)
+void array_printing(int *array, int n){
+    for(int i = 0; i< n; ++i) cout<< array[i]<< " - ";
+    cout<<endl;
+}
+
+int* copy_table(int* followers, int* res, int size) {
+	for (size_t i = 0; i< size; i++)
+	{
+		res[i] = followers[i];
+	}
+	return res;
+}
+
+void delete_matrix(int** matrix, int n) {
+	for (size_t i = 0; i < n; ++i) {
+		delete[] matrix[i];
+	}
+	delete[] matrix;
+}
+
+int sum(int** dmat, int* followers, int nargs) {
+    int suma = 0;
+    for (size_t i = 0; i < nargs; ++i)
+    {
+        suma += dmat[i][followers[i]];
+    }
+
+    return suma;
+}
+
+void reverse_path (int i, int j, int* followers, int n) {
+    cout<<endl;
+    for ( int k = j ; k > i; k--)
+    {
+        cout << followers[k] << "->" << k << endl;
+        followers[followers[k]] = k;
+    }
+    cout<<endl;
+}
+
+
+int* opt_2_TSP(int** dmat, int* followers, int n, int max_counter)
 {
-    return dmat[a][b];
-}
-
-int compute_cost(int** dmat, int* path, int n) {
-    int cost = 0;
-    for (int i = 1; i < n+1; ++i) {
-        cost += dmat[path[(i-1)%n]][path[i%n]];
-    }
-    return cost;
-}
-
-void reverse_path (int i, int j, int* path, int n) {
-    while (i < j) {
-        swap(path[i], path[j]);
-        i++;
-        j--;
-    }
-}
-int* 2optTSP(int** dmat, int* path, n, counter){
-    int current_cost = compute_cost(dmat, path, n);
+    int current_cost = sum(dmat, followers, n);
     char x;
+	cin >> x;
     bool found_something;
-    int mini, minj, minc, new_cost;
+    int mini, minj, minc, new_cost, counter = 0;
     do {
-       counter--;
+       counter++;
+       max_counter--;
        minc = current_cost;
-       cout<< "counter " << counter << endl;
        found_something = false;
-       for (int i = 0; i < n-2; ++i) {
+       array_printing(followers, n);
+       for (int i = 0; i < n-3; ++i) {
            for (int j = i+2; j < n-1; ++j) {
                 new_cost = current_cost
-                        - dmat[path[i]][path[i+1]] - dmat[path[j]][path[j+1]]
-                        + dmat[path[i]][path[j]] + dmat[path[i+1]][path[j+1]];
-            //    cout << "moj stary koszt " << current_cost << ", to moj nowy koszt " << new_cost<< endl;
-            //    cout << "miedzy " << path[i] << " i " << path[j]<< endl;
-            //    cin>>x;
+                        - dmat[i][followers[i]] - dmat[j][followers[j]]
+                        + dmat[i][j] + dmat[followers[i]][followers[j]];
                 if (new_cost < minc){
                     minc = new_cost;
                     mini = i; minj = j;
@@ -50,31 +70,44 @@ int* 2optTSP(int** dmat, int* path, n, counter){
        }
        if (found_something){
            current_cost = minc;
-           reverse_path(mini+1, minj, path, n);
+
+           cout<< "mini "<<mini<<endl<<"minj "<<minj<<endl<<"fmini "<<
+                  followers[mini]<<endl<<"fminj "<<followers[minj]<<endl << "ffmini" <<
+                  followers[followers[mini]]<<endl<<"ffminj "<<followers[followers[minj]]<<endl;
+
+           cout << followers[mini] << "->" << followers[minj]<<endl;
+           followers[followers[mini]] = followers[minj];
+
+		   cout << "PATH REVERSING BETWEEN: mini+1 " << followers[mini] << " i minj " << minj << ":" << endl;
+           reverse_path(followers[mini], minj, followers, n);
+
+           cout << minj << "->" << mini <<endl;
+           followers[minj] = mini;
        }
-    }while (found_something && counter > 0);
-    return path;
+    } while (found_something && max_counter > 0);
+    cout<< "Optymalna sciezka w 2opt zostala znaleziona po " << counter << " petlach" << endl;
+    return followers;
 }
 
-int* 3optTSP(int** dmat, int* path, n, counter){
-    int current_cost = compute_cost(dmat, path, n);
-    char x;
+int* opt_3_TSP(int** dmat, int* followers, int n, int max_counter){
+    int current_cost = sum(dmat, followers, n);
     bool found_something;
-    int flow, mini, minj, minc, new_cost;
+    int flow, mini, minj, minc, mink, new_cost1, new_cost2, counter = 0;
     do {
        flow = 0;
-       counter--;
+       counter++;
+       max_counter--;
        minc = current_cost;
        found_something = false;
        for (int i = 0; i < n-5; ++i) {
            for (int j = i+2; j < n-3; ++j) {
 		   for(int k = j+2; k < n-1; ++k){
                 	new_cost1 = current_cost
-                        	- dmat[path[i]][path[i+1]] - dmat[path[j]][path[j+1]] - dmat[path[k]][path[k+1]]
-                        	+ dmat[path[i]][path[j]] + dmat[path[i+1]][path[j+1]] + ///?????????????????????;
+                                - dmat[i][followers[i]] - dmat[j][followers[j]] - dmat[k][followers[k]]
+                                + dmat[i][followers[j]] + dmat[j][followers[k]] + dmat[k][followers[i]];
                 	new_cost2 = current_cost
-                        	- dmat[path[i]][path[i+1]] - dmat[path[j]][path[j+1]] - dmat[path[k]][path[k+1]]
-                        	+ dmat[path[i]][path[j]] + dmat[path[i+1]][path[j+1]] + //??????????????????????;
+                                - dmat[i][followers[i]] - dmat[j][followers[j]] - dmat[k][followers[k]]
+                                + dmat[i][j] + dmat[followers[j]][followers[k]] + dmat[k][followers[i]];
                 	if (new_cost1 < minc){
                     	    minc = new_cost1;
                     	    mini = i; minj = j; mink =k;
@@ -91,54 +124,96 @@ int* 3optTSP(int** dmat, int* path, n, counter){
            }
        }
        if (found_something){
-           current_cost = minc;
-	   //if flow == 1 bblah blah else halb halb halb
-           reverse_path(mini+1, minj, path, n);
-       }
-    }while (found_something && counter > 0);
-    return path;
-}
+		   current_cost = minc; 
+       	cout << "mini " << mini << endl << "minj " << minj << endl << "mink " << mink << endl << "fmini " <<
+			   followers[mini] << endl << "fminj " << followers[minj] << endl << "fmink " << followers[mink] << endl << "ffmini" <<
+			   followers[followers[mini]] << endl << "ffminj " << followers[followers[minj]] << endl << "ffmink " << followers[followers[mink]] << endl;;
 
+           if (flow == 2)
+           {
+               int followeri = minj;
+               int followeri_p_1 = mink;
+               int followerj_p_1 = followers[mink];
+
+			   cout << "PATH REVERSING BETWEEN: mini+1 " << followers[mini] << " i minj " << minj <<":" <<endl;
+               reverse_path(followers[mini], minj, followers, n);
+
+			   cout << "PATH REVERSING BETWEEN: minj+1 " << followers[minj] << " i mink " << mink << ":" << endl;
+			   reverse_path(followers[minj], mink, followers, n);
+
+	           cout << followers[minj] << " -> " << followerj_p_1 << endl;
+			   cout << followers[mini] << " -> " << followeri_p_1 << endl;
+			   cout << mini << " -> " << followeri << endl;
+
+               followers[followers[minj]] = followerj_p_1;
+               followers[followers[mini]] = followeri_p_1;
+               followers[mini] = followeri;
+               }
+           else {
+               int followerj = followers[minj];
+			   cout << minj << " -> " << followers[mink] << endl;
+			   followers[minj] = followers[mink];
+			   cout << mink << " -> " << followers[mini] << endl;
+			   followers[mink] = followers[mini];
+			   cout << mini << " -> " << followerj << endl;
+               followers[mini] = followerj;
+           }
+		   array_printing(followers, n);
+           char c;
+           cin>>c;
+       }
+    }while (found_something && max_counter > 0);
+    cout<< "Optymalna sciezka w 3opt zostala znaleziona po " << counter << " petlach" << endl;
+    return followers;
+}
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
-    int n, counter;
-    cout<< "ile i ile razy" << endl;
-    cin >> n >> counter;
+    int n, max_counter;
+    cout<< "ile miast i ile maksymalnie iteracji" << endl;
+    cin >> n >> max_counter;
 
     int** dmat = new int*[n];
     for (int i = 0; i < n; ++i) {
         dmat[i] = new int[n];
     }
-    int* path = new int[n];
+
+    int* followers = new int[n];
 
     for (int i = 0; i < n; ++i) {
-        cout << "Czytam wiersz " << i<< endl;
+        //cout << "Czytam wiersz " << i<< endl;
         for (int j = 0; j < n; ++j) {
             cin >> dmat[i][j];
         }
-        path[i] = i;
+        followers[i] = (i+1)%n;
     }
-    cout<<"Se poczytalem, tera do roboty :)" << endl;
-    // 2opt time counter start
-    int* 2optpath = 2optTSP(dmat, path, n, counter);
-    // time counter stop
+
+	// 2opt time max_counter start
+    int copy_followers[100000];
+    copy_table(followers, copy_followers, n);
+    int* opt_2_path = opt_2_TSP(dmat, copy_followers, n, max_counter);
+    // time max_counter stop
   
+    cout<<"optimal path for 2-opt algorithm: "<<endl;
     for (int i = 0; i < n; ++i) {
-   	cout<<2optpath[i]<< " -> ";
+        cout<<opt_2_path[i]<< " -> ";
     }
+    cout<<endl<<"Size of path: " << sum(dmat, opt_2_path, n) << endl;
 
-    cout<<endl;
-    // 3opt time counter start
-    int* 3optpath = 3optTSP(dmat, path, n, counter);
-    // time counter stop
+    // 3opt time max_counter start
+    copy_table(followers, copy_followers, n);
+    int* opt_3_path = opt_3_TSP(dmat, copy_followers, n, max_counter);
+    // time max_counter stop
 
+    cout<<"optimal path for 3-opt algorithm: "<<endl;
     for (int i = 0; i < n; ++i) {
-   	cout<<3optpath[i]<< " -> ";
+        cout<<opt_3_path[i]<< " -> ";
     }
-    cout<<endl;
+    cout<<endl<<"Size of path: " << sum(dmat, opt_3_path, n) << endl;
 
-
+    delete_matrix(dmat, n);
+    delete[] followers;
+	char c;
+	cin >> c;
     return 0;
 }

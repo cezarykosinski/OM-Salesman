@@ -2,8 +2,8 @@
 #include <string.h>
 #include <limits>
 using namespace std;
-//DEBUG
 string c;
+//AAAA WTF
 
 void print_matrix(int** matrix, int n)
 {
